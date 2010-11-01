@@ -5,7 +5,14 @@ h2. About
 jQuery MultiSelect provide an elegant way to handle multiple options on an input.
 To see examples go to "jQuery MultiSelect page":http://wilkerlucio.github.com/jquery-multiselect/
 
-h2. Instalation
+This fork (released as 0.1.8-tf) of initial "jQuery MultiSelect" plugin add a small set of extra features, including:
+* added "on_search" callback option to get completion items dynamically through a function call
+* added "min_query_length" option to start completion only after a given number of characters
+* added "input_references" option to define input references ; this is used when you use value/caption items in completions.
+  Value can be a static array (made of "{ value: caption }" pairs) or a function
+* added "max_selection_length" option to limit selection to a given number of items
+
+h2. Installation
 
 Just copy Javascripts, CSS and Image files in containing folders, see examples.
 

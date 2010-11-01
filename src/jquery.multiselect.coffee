@@ -32,7 +32,11 @@
       @options = {
         separator: ","
         completions: []
+        input_references: null
+        min_query_length: 0
+        on_search: null
         max_complete_results: 5
+        max_selection_length: null
         enable_new_options: true
         complex_search: true
       }
@@ -114,7 +118,15 @@
 
       if values.length > min
         for value in values
-          @add [value, value] if value.present()
+          if value.present()
+            if @options.input_references
+              refs = @options.input_references
+              if typeof refs == 'function'
+                refs = refs()
+              caption = refs[value] or value
+              @add [caption, value]
+            else
+              @add [value, value]
 
         @input.val("")
         @autocomplete.search()
@@ -147,12 +159,16 @@
       a.append(close)
 
       @input_wrapper.before(a)
+      if @options.max_selection_length
+        if @values.length >= @options.max_selection_length
+          @input.hide()
       @refresh_hidden()
 
     remove: (value) ->
       @values = $.grep @values, (v) -> v[1] != value[1]
       @container.find("a.bit-box").each ->
         $(this).remove() if $(this).data("value")[1] == value[1]
+      @input.show()
       @refresh_hidden()
 
     refresh_hidden: ->
@@ -284,8 +300,13 @@
       @list.html("") # clear list
       @current = 0
 
-      if @query.present()
+      if @query.present() and @query.length >= @multiselect.options.min_query_length
         @container.fadeIn("fast")
+
+        if @multiselect.options.on_search
+          completions = @multiselect.options.on_search(@query)
+          @completions = @parse_completions(completions)
+
         @matches = @matching_completions(@query)
 
         if @multiselect.options.enable_new_options

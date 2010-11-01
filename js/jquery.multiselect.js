@@ -20,7 +20,11 @@ var __bind = function(func, context) {
     this.options = {
       separator: ",",
       completions: [],
+      input_references: null,
+      min_query_length: 0,
+      on_search: null,
       max_complete_results: 5,
+      max_selection_length: null,
       enable_new_options: true,
       complex_search: true
     };
@@ -93,7 +97,7 @@ var __bind = function(func, context) {
     });
   };
   $.MultiSelect.prototype.parse_value = function(min) {
-    var _i, _len, _ref, value, values;
+    var _i, _len, _ref, caption, refs, value, values;
     min = (typeof min !== "undefined" && min !== null) ? min : 0;
     values = this.input.val().split(this.options.separator);
     if (values.length > min) {
@@ -101,7 +105,16 @@ var __bind = function(func, context) {
       for (_i = 0, _len = _ref.length; _i < _len; _i++) {
         value = _ref[_i];
         if (value.present()) {
-          this.add([value, value]);
+          if (this.options.input_references) {
+            refs = this.options.input_references;
+            if (typeof refs === 'function') {
+              refs = refs();
+            }
+            caption = refs[value] || value;
+            this.add([caption, value]);
+          } else {
+            this.add([value, value]);
+          }
         }
       }
       this.input.val("");
@@ -142,6 +155,11 @@ var __bind = function(func, context) {
     }, this));
     a.append(close);
     this.input_wrapper.before(a);
+    if (this.options.max_selection_length) {
+      if (this.values.length >= this.options.max_selection_length) {
+        this.input.hide();
+      }
+    }
     return this.refresh_hidden();
   };
   $.MultiSelect.prototype.remove = function(value) {
@@ -153,6 +171,7 @@ var __bind = function(func, context) {
         return $(this).remove();
       }
     });
+    this.input.show();
     return this.refresh_hidden();
   };
   $.MultiSelect.prototype.refresh_hidden = function() {
@@ -304,15 +323,19 @@ var __bind = function(func, context) {
     }, this));
   };
   $.MultiSelect.AutoComplete.prototype.search = function() {
-    var _i, _len, _ref, def, i;
+    var _i, _len, _ref, completions, def, i;
     if (this.input.val().trim() === this.query) {
       return null;
     }
     this.query = this.input.val().trim();
     this.list.html("");
     this.current = 0;
-    if (this.query.present()) {
+    if (this.query.present() && (this.query.length >= this.multiselect.options.min_query_length)) {
       this.container.fadeIn("fast");
+      if (this.multiselect.options.on_search) {
+        completions = this.multiselect.options.on_search(this.query);
+        this.completions = this.parse_completions(completions);
+      }
       this.matches = this.matching_completions(this.query);
       if (this.multiselect.options.enable_new_options) {
         def = this.create_item("Add <em>" + this.query + "</em>");
