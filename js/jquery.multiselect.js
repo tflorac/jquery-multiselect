@@ -18,6 +18,7 @@ var __bind = function(func, context) {
   };
   $.MultiSelect = function(element, options) {
     this.options = {
+      readonly: false,
       separator: ",",
       completions: [],
       input_references: null,
@@ -118,8 +119,9 @@ var __bind = function(func, context) {
         }
       }
       this.input.val("");
-      return this.autocomplete.search();
+      this.autocomplete.search();
     }
+    return this.options.readonly ? this.input.hide() : null;
   };
   $.MultiSelect.prototype.add_and_reset = function() {
     if (this.autocomplete.val()) {
@@ -148,17 +150,17 @@ var __bind = function(func, context) {
     });
     a.data("value", value);
     a.html(value[0].entitizeHTML());
-    close = $(document.createElement("a"));
-    close.addClass("closebutton");
-    close.click(__bind(function() {
-      return this.remove(a.data("value"));
-    }, this));
-    a.append(close);
+    if (!this.options.readonly) {
+      close = $(document.createElement("a"));
+      close.addClass("closebutton");
+      close.click(__bind(function() {
+        return this.remove(a.data("value"));
+      }, this));
+      a.append(close);
+    }
     this.input_wrapper.before(a);
-    if (this.options.max_selection_length) {
-      if (this.values.length >= this.options.max_selection_length) {
-        this.input.hide();
-      }
+    if (this.options.readonly || (this.options.max_selection_length && (this.values.length >= this.options.max_selection_length))) {
+      this.input.hide();
     }
     return this.refresh_hidden();
   };

@@ -30,6 +30,7 @@
   class $.MultiSelect
     constructor: (element, options) ->
       @options = {
+        readonly: false
         separator: ","
         completions: []
         input_references: null
@@ -131,6 +132,9 @@
         @input.val("")
         @autocomplete.search()
 
+      if @options.readonly
+        @input.hide()
+
     add_and_reset: ->
       if @autocomplete.val()
         @add(@autocomplete.val())
@@ -152,16 +156,16 @@
       a.data("value", value)
       a.html(value[0].entitizeHTML())
 
-      close = $(document.createElement("a"))
-      close.addClass("closebutton")
-      close.click =>
-        @remove(a.data("value"))
-      a.append(close)
+      if not @options.readonly
+        close = $(document.createElement("a"))
+        close.addClass("closebutton")
+        close.click =>
+          @remove(a.data("value"))
+        a.append(close)
 
       @input_wrapper.before(a)
-      if @options.max_selection_length
-        if @values.length >= @options.max_selection_length
-          @input.hide()
+      if @options.readonly or (@options.max_selection_length and (@values.length >= @options.max_selection_length))
+        @input.hide()
       @refresh_hidden()
 
     remove: (value) ->
