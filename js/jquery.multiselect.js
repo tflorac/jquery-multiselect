@@ -19,6 +19,8 @@ var __bind = function(func, context) {
   $.MultiSelect = function(element, options) {
     this.options = {
       readonly: false,
+      input_type: "input",
+      input_class: null,
       separator: ",",
       completions: [],
       input_references: null,
@@ -42,6 +44,9 @@ var __bind = function(func, context) {
     this.hidden.attr("name", this.input.attr("name"));
     this.hidden.attr("type", "hidden");
     this.input.removeAttr("name");
+    if (this.options.input_class) {
+      this.input.addClass(this.options.input_class);
+    }
     this.container = $(document.createElement("div"));
     this.container.addClass("jquery-multiselect");
     this.input_wrapper = $(document.createElement("a"));
@@ -100,7 +105,11 @@ var __bind = function(func, context) {
   $.MultiSelect.prototype.parse_value = function(min) {
     var _i, _len, _ref, caption, refs, value, values;
     min = (typeof min !== "undefined" && min !== null) ? min : 0;
-    values = this.input.val().split(this.options.separator);
+    if (this.options.input_type === "input") {
+      values = this.input.val().split(this.options.separator);
+    } else {
+      values = this.options.input_values;
+    }
     if (values.length > min) {
       _ref = values;
       for (_i = 0, _len = _ref.length; _i < _len; _i++) {
@@ -342,7 +351,7 @@ var __bind = function(func, context) {
       if (this.multiselect.options.enable_new_options) {
         def = this.create_item("Add <em>" + this.query + "</em>");
         def.mouseover(__bind(function(e) {
-          return this.select_index(e, 0);
+          return this.select_index(0);
         }, this));
       }
       _ref = this.matches;
@@ -354,7 +363,7 @@ var __bind = function(func, context) {
           x = this.multiselect.options.enable_new_options ? i + 1 : i;
           item = this.create_item(this.highlight(option[0], this.query));
           return item.mouseover(__bind(function(e) {
-            return this.select_index(e, x);
+            return this.select_index(x);
           }, this));
         }).call(this);
       }
@@ -464,20 +473,26 @@ var __bind = function(func, context) {
   return ($.fn.multiselect = function(options) {
     options = (typeof options !== "undefined" && options !== null) ? options : {};
     return $(this).each(function() {
-      var _i, _len, _ref, completions, input, option, select_options;
+      var _i, _len, _ref, completions, input, option, select_options, values;
       if (this.tagName.toLowerCase() === "select") {
         input = $(document.createElement("input"));
         input.attr("type", "text");
         input.attr("name", this.name);
         input.attr("id", this.id);
         completions = [];
+        values = [];
         _ref = this.options;
         for (_i = 0, _len = _ref.length; _i < _len; _i++) {
           option = _ref[_i];
           completions.push([option.innerHTML, option.value]);
+          if (option.selected) {
+            values.push(option.value);
+          }
         }
         select_options = {
           completions: completions,
+          input_type: "select",
+          input_values: values,
           enable_new_options: false
         };
         $.extend(select_options, options);

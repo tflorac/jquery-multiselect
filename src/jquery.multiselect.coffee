@@ -1,4 +1,5 @@
 # Copyright (c) 2010 Wilker Lúcio
+# Contributors: Thierry Florac
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -31,6 +32,8 @@
     constructor: (element, options) ->
       @options = {
         readonly: false
+        input_type: "input"
+        input_class: null
         separator: ","
         completions: []
         input_references: null
@@ -54,6 +57,8 @@
       @hidden.attr("name", @input.attr("name"))
       @hidden.attr("type", "hidden")
       @input.removeAttr("name")
+      if @options.input_class
+        @input.addClass(@options.input_class)
 
       @container = $(document.createElement("div"))
       @container.addClass("jquery-multiselect")
@@ -115,7 +120,10 @@
 
     parse_value: (min) ->
       min ?= 0
-      values = @input.val().split(@options.separator)
+      if @options.input_type == "input"
+        values = @input.val().split(@options.separator)
+      else
+        values = @options.input_values
 
       if values.length > min
         for value in values
@@ -315,12 +323,12 @@
 
         if @multiselect.options.enable_new_options
           def = @create_item("Add <em>" + @query + "</em>")
-          def.mouseover (e) => @select_index(e, 0)
+          def.mouseover (e) => @select_index(0)
 
         for option, i in @matches
           x = if @multiselect.options.enable_new_options then i + 1 else i
           item = @create_item(@highlight(option[0], @query))
-          item.mouseover (e) => @select_index(e, x)
+          item.mouseover (e) => @select_index(x)
 
         @matches.unshift([@query, @query]) if @multiselect.options.enable_new_options
 
@@ -414,11 +422,16 @@
         input.attr("id", this.id)
 
         completions = []
+        values = []
         for option in this.options
           completions.push([option.innerHTML, option.value])
+          if option.selected
+            values.push(option.value)
 
         select_options = {
           completions: completions
+          input_type: "select"
+          input_values: values
           enable_new_options: false
         }
 
