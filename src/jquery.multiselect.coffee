@@ -5,7 +5,7 @@
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
 #
-#    http://www.apache.org/licenses/LICENSE-2.0
+#        http://www.apache.org/licenses/LICENSE-2.0
 #
 # Unless required by applicable law or agreed to in writing, software
 # distributed under the License is distributed on an "AS IS" BASIS,
@@ -14,443 +14,480 @@
 # limitations under the License.
 
 (($) ->
-  KEY = {
-    BACKSPACE: 8
-    TAB: 9
-    RETURN: 13
-    ESCAPE: 27
-    SPACE: 32
-    LEFT: 37
-    UP: 38
-    RIGHT: 39
-    DOWN: 40
-    COLON: 188
-    DOT: 190
-  }
+    KEY = {
+        BACKSPACE: 8
+        TAB: 9
+        RETURN: 13
+        ESCAPE: 27
+        SPACE: 32
+        LEFT: 37
+        UP: 38
+        RIGHT: 39
+        DOWN: 40
+        COLON: 188
+        DOT: 190
+    }
 
-  class $.MultiSelect
-    constructor: (element, options) ->
-      @options = {
-        readonly: false
-        input_type: "input"
-        input_class: null
-        separator: ","
-        completions: []
-        input_references: null
-        min_query_length: 0
-        on_search: null
-        max_complete_results: 5
-        max_selection_length: null
-        enable_new_options: true
-        complex_search: true
-      }
-      $.extend(@options, options || {})
-      @values = []
-      @input = $(element)
-      @initialize_elements()
-      @initialize_events()
-      @parse_value()
+    class $.MultiSelect
+        constructor: (element, options) ->
+            @options = {
+                readonly: false
+                input_type: "input"
+                input_class: null
+                separator: ","
+                completions: []
+                input_references: null
+                min_query_length: 0
+                on_search: null
+                max_complete_results: 5
+                max_selection_length: null
+                enable_new_options: true
+                complex_search: true
+            }
+            $.extend(@options, options || {})
+            @values = []
+            @input = $(element)
+            @initialize_elements()
+            @initialize_events()
+            @parse_value()
 
-    initialize_elements: ->
-      # hidden input to hold real value
-      @hidden = $(document.createElement("input"))
-      @hidden.attr("name", @input.attr("name"))
-      @hidden.attr("type", "hidden")
-      @input.removeAttr("name")
-      if @options.input_class
-        @input.addClass(@options.input_class)
+        initialize_elements: ->
+            # hidden input to hold real value
+            @hidden = $(document.createElement("input"))
+            @hidden.attr("name", @input.attr("name"))
+            @hidden.attr("type", "hidden")
+            @input.removeAttr("name")
+            if @options.input_class
+                @input.addClass(@options.input_class)
 
-      @container = $(document.createElement("div"))
-      @container.addClass("jquery-multiselect")
+            @container = $(document.createElement("div"))
+            @container.addClass("jquery-multiselect")
 
-      @input_wrapper = $(document.createElement("a"))
-      @input_wrapper.addClass("bit-input")
+            @input_wrapper = $(document.createElement("a"))
+            @input_wrapper.addClass("bit-input")
 
-      @input.replaceWith(@container)
-      @container.append(@input_wrapper)
-      @input_wrapper.append(@input)
-      @container.before(@hidden)
+            @input.replaceWith(@container)
+            @container.append(@input_wrapper)
+            @input_wrapper.append(@input)
+            @container.before(@hidden)
 
-    initialize_events: ->
-      # create helpers
-      @selection = new $.MultiSelect.Selection(@input)
-      @resizable = new $.MultiSelect.ResizableInput(@input)
-      @observer = new $.MultiSelect.InputObserver(@input)
-      @autocomplete = new $.MultiSelect.AutoComplete(this, @options.completions)
+        initialize_events: ->
+            # create helpers
+            @selection = new $.MultiSelect.Selection(@input)
+            @resizable = new $.MultiSelect.ResizableInput(@input)
+            @observer = new $.MultiSelect.InputObserver(@input)
+            @autocomplete = new $.MultiSelect.AutoComplete(this, @options.completions)
 
-      # prevent container click to put carret at end
-      @input.click (e) =>
-        e.stopPropagation()
+            # prevent container click to put carret at end
+            @input.click (e) =>
+                e.stopPropagation()
 
-      # create element when place separator or paste
-      @input.keyup =>
-        @parse_value(1)
+            # create element when place separator or paste
+            @input.keyup =>
+                @parse_value(1)
 
-      # focus input and set carret at and
-      @container.click =>
-        @input.focus()
-        @selection.set_caret_at_end()
+            # focus input and set carret at and
+            @container.click =>
+                @input.focus()
+                @selection.set_caret_at_end()
 
-      # add element on press TAB or RETURN
-      @observer.bind [KEY.TAB, KEY.RETURN], (e) =>
-        if @autocomplete.val()
-          e.preventDefault()
-          @add_and_reset()
+            # add element on press TAB or RETURN
+            @observer.bind [KEY.TAB, KEY.RETURN], (e) =>
+                if @autocomplete.val()
+                    e.preventDefault()
+                    @add_and_reset()
 
-      # remove last item
-      @observer.bind [KEY.BACKSPACE], (e) =>
-        return if @values.length <= 0
-        caret = @selection.get_caret()
+            # remove last item
+            @observer.bind [KEY.BACKSPACE], (e) =>
+                return if @values.length <= 0
+                caret = @selection.get_caret()
 
-        if caret[0] == 0 and caret[1] == 0
-          e.preventDefault()
-          @remove(@values[@values.length - 1])
+                if caret[0] == 0 and caret[1] == 0
+                    e.preventDefault()
+                    @remove(@values[@values.length - 1])
 
-      # hide complete box
-      @input.blur =>
-        setTimeout(=>
-          @autocomplete.hide_complete_box()
-        200)
+            # hide complete box
+            @input.blur =>
+                setTimeout(=>
+                    @autocomplete.hide_complete_box()
+                200)
 
-      @observer.bind [KEY.ESCAPE], (e) =>
-        @autocomplete.hide_complete_box()
+            @observer.bind [KEY.ESCAPE], (e) =>
+                @autocomplete.hide_complete_box()
 
-    values_real: ->
-      $.map @values, (v) -> v[1]
+        values_real: ->
+            $.map @values, (v) -> v[1]
 
-    parse_value: (min) ->
-      min ?= 0
-      if @options.input_type == "input"
-        values = @input.val().split(@options.separator)
-      else
-        values = @options.input_values
-
-      if values.length > min
-        for value in values
-          if value.present()
-            if @options.input_references
-              refs = @options.input_references
-              if typeof refs == 'function'
-                refs = refs()
-              caption = refs[value] or value
-              @add [caption, value]
+        parse_value: (min) ->
+            min ?= 0
+            if @options.input_type == "input"
+                values = @input.val().split(@options.separator)
             else
-              @add [value, value]
+                values = @options.input_values
 
-        @input.val("")
-        @autocomplete.search()
+            if values.length > min
+                for value in values
+                    if value.present()
+                        if @options.input_references
+                            refs = @options.input_references
+                            if typeof refs == 'function'
+                                refs = refs()
+                            caption = refs[value] or value
+                            @add [caption, value]
+                        else
+                            @add [value, value]
 
-      if @options.readonly
-        @input.hide()
+                @input.val("")
+                @autocomplete.search()
 
-    add_and_reset: ->
-      if @autocomplete.val()
-        @add(@autocomplete.val())
-        @input.val("")
-        @autocomplete.search()
+            if @options.readonly
+                @input.hide()
 
-    # add new element
-    add: (value) ->
-      return if $.inArray(value[1], @values_real()) > -1
-      return if value[0].blank()
+        add_and_reset: ->
+            if @autocomplete.val()
+                @add(@autocomplete.val())
+                @input.val("")
+                @autocomplete.search()
 
-      value[1] = value[1].trim()
-      @values.push(value)
+        # add new element
+        add: (value) ->
+            return if $.inArray(value[1], @values_real()) > -1
+            return if value[0].blank()
 
-      a = $(document.createElement("a"))
-      a.addClass("bit bit-box")
-      a.mouseover -> $(this).addClass("bit-hover")
-      a.mouseout -> $(this).removeClass("bit-hover")
-      a.data("value", value)
-      a.html(value[0].entitizeHTML())
+            value[1] = value[1].trim()
+            @values.push(value)
 
-      if not @options.readonly
-        close = $(document.createElement("a"))
-        close.addClass("closebutton")
-        close.click =>
-          @remove(a.data("value"))
-        a.append(close)
+            a = $(document.createElement("a"))
+            a.addClass("bit bit-box")
+            a.mouseover -> $(this).addClass("bit-hover")
+            a.mouseout -> $(this).removeClass("bit-hover")
+            a.data("value", value)
+            a.html(value[0].entitizeHTML())
 
-      @input_wrapper.before(a)
-      if @options.readonly or (@options.max_selection_length and (@values.length >= @options.max_selection_length))
-        @input.hide()
-      @refresh_hidden()
+            if not @options.readonly
+                close = $(document.createElement("a"))
+                close.addClass("closebutton")
+                close.click =>
+                    @remove(a.data("value"))
+                a.append(close)
 
-    remove: (value) ->
-      @values = $.grep @values, (v) -> v[1] != value[1]
-      @container.find("a.bit-box").each ->
-        $(this).remove() if $(this).data("value")[1] == value[1]
-      @input.show()
-      @refresh_hidden()
+            @input_wrapper.before(a)
+            if @options.readonly or (@options.max_selection_length and (@values.length >= @options.max_selection_length))
+                @input.hide()
+            @refresh_hidden()
 
-    refresh_hidden: ->
-      @hidden.val(@values_real().join(@options.separator))
+        remove: (value) ->
+            @values = $.grep @values, (v) -> v[1] != value[1]
+            @container.find("a.bit-box").each ->
+                $(this).remove() if $(this).data("value")[1] == value[1]
+            @input.show()
+            @refresh_hidden()
 
-  # Input Observer Helper
-  class $.MultiSelect.InputObserver
-    constructor: (element) ->
-      @input = $(element)
-      @input.keydown (e) => @handle_keydown(e)
-      @events = []
+        refresh_hidden: ->
+            @hidden.val(@values_real().join(@options.separator))
 
-    bind: (key, callback) ->
-      @events.push([key, callback])
+    # Input Observer Helper
+    class $.MultiSelect.InputObserver
+        constructor: (element) ->
+            @input = $(element)
+            @input.keydown (e) => @handle_keydown(e)
+            @events = []
 
-    handle_keydown: (e) ->
-      for event in @events
-        [keys, callback] = event
-        keys = [keys] unless keys.push
-        callback(e) if $.inArray(e.keyCode, keys) > -1
+        bind: (key, callback) ->
+            @events.push([key, callback])
 
-  # Selection Helper
-  class $.MultiSelect.Selection
-    constructor: (element) ->
-      @input = $(element)[0]
+        handle_keydown: (e) ->
+            for event in @events
+                [keys, callback] = event
+                keys = [keys] unless keys.push
+                callback(e) if $.inArray(e.keyCode, keys) > -1
 
-    get_caret: ->
-      # For IE
-      if document.selection
-        r = document.selection.createRange().duplicate()
-        r.moveEnd('character', @input.value.length)
+    # Selection Helper
+    class $.MultiSelect.Selection
+        constructor: (element) ->
+            @input = $(element)[0]
 
-        if r.text == ''
-          [@input.value.length, @input.value.length]
-        else
-          [@input.value.lastIndexOf(r.text), @input.value.lastIndexOf(r.text)]
-      # Others
-      else
-        [@input.selectionStart, @input.selectionEnd]
+        get_caret: ->
+            # For IE
+            if document.selection
+                r = document.selection.createRange().duplicate()
+                r.moveEnd('character', @input.value.length)
 
-    set_caret: (begin, end) ->
-      end ?= begin
-      @input.selectionStart = begin
-      @input.selectionEnd = end
+                if r.text == ''
+                    [@input.value.length, @input.value.length]
+                else
+                    [@input.value.lastIndexOf(r.text), @input.value.lastIndexOf(r.text)]
+            # Others
+            else
+                [@input.selectionStart, @input.selectionEnd]
 
-    set_caret_at_end: ->
-      @set_caret(@input.value.length)
+        set_caret: (begin, end) ->
+            end ?= begin
+            @input.selectionStart = begin
+            @input.selectionEnd = end
 
-  # Resizable Input Helper
-  class $.MultiSelect.ResizableInput
-    constructor: (element) ->
-      @input = $(element)
-      @create_measurer()
-      @input.keypress (e) => @set_width(e)
-      @input.keyup (e) => @set_width(e)
-      @input.change (e) => @set_width(e)
+        set_caret_at_end: ->
+            @set_caret(@input.value.length)
 
-    create_measurer: ->
-      if $("#__jquery_multiselect_measurer")[0] == undefined
-        measurer = $(document.createElement("div"))
-        measurer.attr("id", "__jquery_multiselect_measurer")
-        measurer.css {
-          position: "absolute"
-          left: "-1000px"
-          top: "-1000px"
-        }
+    # Resizable Input Helper
+    class $.MultiSelect.ResizableInput
+        constructor: (element) ->
+            @input = $(element)
+            @create_measurer()
+            @input.keypress (e) => @set_width(e)
+            @input.keyup (e) => @set_width(e)
+            @input.change (e) => @set_width(e)
 
-        $(document.body).append(measurer)
+        create_measurer: ->
+            if $("#__jquery_multiselect_measurer")[0] == undefined
+                measurer = $(document.createElement("div"))
+                measurer.attr("id", "__jquery_multiselect_measurer")
+                measurer.css {
+                    position: "absolute"
+                    left: "-1000px"
+                    top: "-1000px"
+                }
 
-      @measurer = $("#__jquery_multiselect_measurer:first")
-      @measurer.css {
-        fontSize: @input.css('font-size')
-        fontFamily: @input.css('font-family')
-      }
+                $(document.body).append(measurer)
 
-    calculate_width: ->
-      @measurer.html(@input.val().entitizeHTML() + 'MM')
-      @measurer.innerWidth()
+            @measurer = $("#__jquery_multiselect_measurer:first")
+            @measurer.css {
+                fontSize: @input.css('font-size')
+                fontFamily: @input.css('font-family')
+            }
 
-    set_width: ->
-      @input.css("width", @calculate_width() + "px")
+        calculate_width: ->
+            @measurer.html(@input.val().entitizeHTML() + 'MM')
+            @measurer.innerWidth()
 
-  # AutoComplete Helper
-  class $.MultiSelect.AutoComplete
-    constructor: (multiselect, completions) ->
-      @multiselect = multiselect
-      @input = @multiselect.input
-      @completions = @parse_completions(completions)
-      @matches = []
-      @create_elements()
-      @bind_events()
+        set_width: ->
+            @input.css("width", @calculate_width() + "px")
 
-    parse_completions: (completions) ->
-      $.map completions, (value) ->
-        if typeof value == "string"
-          [[value, value]]
-        else if value instanceof Array and value.length == 2
-          [value]
-        else if value.value and value.caption
-          [[value.caption, value.value]]
-        else
-          console.error "Invalid option #{value}" if console
+    # AutoComplete Helper
+    class $.MultiSelect.AutoComplete
+        constructor: (multiselect, completions) ->
+            @timer = null
+            @busy = 0
+            @multiselect = multiselect
+            @input = @multiselect.input
+            @completions = @parse_completions(completions)
+            @matches = []
+            @create_elements()
+            @bind_events()
 
-    create_elements: ->
-      @container = $(document.createElement("div"))
-      @container.addClass("jquery-multiselect-autocomplete")
-      @container.css("width", @multiselect.container.outerWidth())
-      @container.css("display", "none")
+        parse_completions: (completions) ->
+            $.map completions, (value) ->
+                if typeof value == "string"
+                    [[value, value]]
+                else if value instanceof Array and value.length == 2
+                    [value]
+                else if value.value and value.caption
+                    [[value.caption, value.value]]
+                else
+                    console.error "Invalid option #{value}" if console
 
-      @container.append(@def)
+        create_elements: ->
+            @container = $(document.createElement("div"))
+            @container.addClass("jquery-multiselect-autocomplete")
+            width = @multiselect.container.outerWidth()
+            if width < 200
+                width = 200
+            @container.css("width", width)
+            @container.css("display", "none")
 
-      @list = $(document.createElement("ul"))
-      @list.addClass("feed")
+            @container.append(@def)
 
-      @container.append(@list)
-      @multiselect.container.after(@container)
+            @list = $(document.createElement("ul"))
+            @list.addClass("feed")
 
-    bind_events: ->
-      @input.keypress (e) => @search(e)
-      @input.keyup (e) => @search(e)
-      @input.change (e) => @search(e)
-      @multiselect.observer.bind KEY.UP, (e) => e.preventDefault(); @navigate_up()
-      @multiselect.observer.bind KEY.DOWN, (e) => e.preventDefault(); @navigate_down()
+            @container.append(@list)
+            @multiselect.container.after(@container)
 
-    search: ->
-      return if @input.val().trim() == @query # dont do operation if query is same
+        bind_events: ->
+            @input.keypress (e) => @search(e)
+            @input.keyup (e) => @search(e)
+            @input.change (e) => @search(e)
+            @multiselect.observer.bind KEY.UP, (e) => e.preventDefault(); @navigate_up()
+            @multiselect.observer.bind KEY.DOWN, (e) => e.preventDefault(); @navigate_down()
 
-      @query = @input.val().trim()
-      @list.html("") # clear list
-      @current = 0
+        _setBusy: (state) ->
+            if state
+                ++@busy
+            else
+                --@busy
+            @busy = Math.max(@busy, 0)
 
-      if @query.present() and @query.length >= @multiselect.options.min_query_length
-        @container.fadeIn("fast")
+        search: ->
+            if @timer
+                clearTimeout(@timer)
+            callback = (obj) ->
+                obj._search()
+            @timer = setTimeout callback, 300, this
+            return
 
-        if @multiselect.options.on_search
-          completions = @multiselect.options.on_search(@query)
-          @completions = @parse_completions(completions)
+        _search: ->
+            return if @busy
+            return if @input.val().trim() == @query # dont do operation if query is same
 
-        @matches = @matching_completions(@query)
+            @query = @input.val().trim()
+            @list.html("") # clear list
+            @current = 0
 
-        if @multiselect.options.enable_new_options
-          def = @create_item("Add <em>" + @query + "</em>")
-          def.mouseover (e) => @select_index(0)
+            if @query.present() and @query.length >= @multiselect.options.min_query_length
+                @container.fadeIn("fast")
 
-        for option, i in @matches
-          x = if @multiselect.options.enable_new_options then i + 1 else i
-          item = @create_item(@highlight(option[0], @query))
-          item.mouseover (e) => @select_index(x)
+                if @multiselect.options.on_search
+                    @_initSearch()
 
-        @matches.unshift([@query, @query]) if @multiselect.options.enable_new_options
+                @matches = @matching_completions(@query)
 
-        @select_index(0)
-      else
-        @matches = []
-        @hide_complete_box()
-        @query = null
+                if @multiselect.options.enable_new_options
+                    def = @create_item("Add <em>" + @query + "</em>")
+                    def.mouseover (e) => @select_index(0)
 
-    hide_complete_box: ->
-      @container.fadeOut("fast")
+                for option, i in @matches
+                    x = if @multiselect.options.enable_new_options then i + 1 else i
+                    item = @create_item(@highlight(option[0], @query))
+                    item.mouseover (e) => @select_index(x)
 
-    select_index: (index) ->
-      items = @list.find("li")
-      items.removeClass("auto-focus")
-      items.filter(":eq(#{index})").addClass("auto-focus")
+                @matches.unshift([@query, @query]) if @multiselect.options.enable_new_options
 
-      @current = index
+                @select_index(0)
+            else
+                @matches = []
+                @hide_complete_box()
+                @query = null
 
-    navigate_down: ->
-      next = @current + 1
-      next = 0 if next >= @matches.length
-      @select_index(next)
+        _initSearch: ->
+            if @busy
+                callback = (obj) ->
+                    obj._initSearch()
+                setTimeout callback, 100, this
+            else
+                @_doSearch()
 
-    navigate_up: ->
-      next = @current - 1
-      next = @matches.length - 1 if next < 0
-      @select_index(next)
+        _doSearch: ->
+            return if @busy
+            @_setBusy(true)
+            try
+                completions = @multiselect.options.on_search(@query)
+                @completions = @parse_completions(completions)
+            finally
+                @_setBusy(false)
+                
+        hide_complete_box: ->
+            @container.fadeOut("fast")
 
-    create_item: (text, highlight) ->
-      item = $(document.createElement("li"))
-      item.click =>
-        @multiselect.add_and_reset()
-        @search()
-        @input.focus()
-      item.html(text)
-      @list.append(item)
-      item
+        select_index: (index) ->
+            items = @list.find("li")
+            items.removeClass("auto-focus")
+            items.filter(":eq(#{index})").addClass("auto-focus")
 
-    val: ->
-      @matches[@current]
+            @current = index
 
-    highlight: (text, highlight) ->
-      if @multiselect.options.complex_search
-        highlighted = ""
-        current = 0
+        navigate_down: ->
+            next = @current + 1
+            next = 0 if next >= @matches.length
+            @select_index(next)
 
-        for char, i in text
-          char = text.charAt(i)
-          if current < highlight.length and char.toLowerCase() == highlight.charAt(current).toLowerCase()
-            highlighted += "<em>#{char}</em>"
-            current++
-          else
-            highlighted += char
+        navigate_up: ->
+            next = @current - 1
+            next = @matches.length - 1 if next < 0
+            @select_index(next)
 
-        highlighted
-      else
-        reg = "(#{RegExp.escape(highlight)})"
-        text.replace(new RegExp(reg, "gi"), '<em>$1</em>')
+        create_item: (text, highlight) ->
+            item = $(document.createElement("li"))
+            item.click =>
+                @multiselect.add_and_reset()
+                @search()
+                @input.focus()
+            item.html(text)
+            @list.append(item)
+            item
 
-    matching_completions: (text) ->
-      if @multiselect.options.complex_search
-        reg = ""
-        for char, i in text
-          char = text.charAt(i)
-          reg += RegExp.escape(char) + ".*"
+        val: ->
+            @matches[@current]
 
-        reg = new RegExp(reg, "i")
-      else
-        reg = new RegExp(RegExp.escape(text), "i")
-      count = 0
-      $.grep @completions, (c) =>
-        return false if count >= @multiselect.options.max_complete_results
-        return false if $.inArray(c[1], @multiselect.values_real()) > -1
+        highlight: (text, highlight) ->
+            if @multiselect.options.complex_search
+                highlighted = ""
+                current = 0
 
-        if c[0].match(reg)
-          count++
-          true
-        else
-          false
+                for char, i in text
+                    char = text.charAt(i)
+                    if current < highlight.length and char.toLowerCase() == highlight.charAt(current).toLowerCase()
+                        highlighted += "<em>#{char}</em>"
+                        current++
+                    else
+                        highlighted += char
 
-  # Hook jQuery extension
-  $.fn.multiselect = (options) ->
-    options ?= {}
+                highlighted
+            else
+                reg = "(#{RegExp.escape(highlight)})"
+                text.replace(new RegExp(reg, "gi"), '<em>$1</em>')
 
-    $(this).each ->
-      if this.tagName.toLowerCase() == "select"
-        input = $(document.createElement("input"))
-        input.attr("type", "text")
-        input.attr("name", this.name)
-        input.attr("id", this.id)
+        matching_completions: (text) ->
+            if @multiselect.options.complex_search
+                reg = ""
+                for char, i in text
+                    char = text.charAt(i)
+                    reg += RegExp.escape(char) + ".*"
 
-        completions = []
-        values = []
-        for option in this.options
-          completions.push([option.innerHTML, option.value])
-          if option.selected
-            values.push(option.value)
+                reg = new RegExp(reg, "i")
+            else
+                reg = new RegExp(RegExp.escape(text), "i")
+            count = 0
+            $.grep @completions, (c) =>
+                return false if count >= @multiselect.options.max_complete_results
+                return false if $.inArray(c[1], @multiselect.values_real()) > -1
 
-        select_options = {
-          completions: completions
-          input_type: "select"
-          input_values: values
-          enable_new_options: false
-        }
+                if c[0].match(reg)
+                    count++
+                    true
+                else
+                    false
 
-        $.extend(select_options, options)
+    # Hook jQuery extension
+    $.fn.multiselect = (options) ->
+        options ?= {}
 
-        $(this).replaceWith(input)
+        $(this).each ->
+            if this.tagName.toLowerCase() == "select"
+                input = $(document.createElement("input"))
+                input.attr("type", "text")
+                input.attr("name", this.name)
+                input.attr("id", this.id)
 
-        new $.MultiSelect(input, select_options)
-      else if this.tagName.toLowerCase() == "input" and this.type == "text"
-        new $.MultiSelect(this, options)
+                completions = []
+                values = []
+                for option in this.options
+                    completions.push([option.innerHTML, option.value])
+                    if option.selected
+                        values.push(option.value)
+
+                select_options = {
+                    completions: completions
+                    input_type: "select"
+                    input_values: values
+                    enable_new_options: false
+                }
+
+                $.extend(select_options, options)
+
+                $(this).replaceWith(input)
+
+                new $.MultiSelect(input, select_options)
+            else if this.tagName.toLowerCase() == "input" and this.type == "text"
+                new $.MultiSelect(this, options)
 )(jQuery)
 
 $.extend String.prototype, {
-  trim: -> this.replace(/^[\r\n\s]/g, '').replace(/[\r\n\s]$/g, '')
-  entitizeHTML: -> this.replace(/</g,'&lt;').replace(/>/g,'&gt;')
-  unentitizeHTML: -> this.replace(/&lt;/g,'<').replace(/&gt;/g,'>')
-  blank: -> this.trim().length == 0
-  present: -> not @blank()
+    trim: -> this.replace(/^[\r\n\s]/g, '').replace(/[\r\n\s]$/g, '')
+    entitizeHTML: -> this.replace(/</g,'&lt;').replace(/>/g,'&gt;')
+    unentitizeHTML: -> this.replace(/&lt;/g,'<').replace(/&gt;/g,'>')
+    blank: -> this.trim().length == 0
+    present: -> not @blank()
 }
 
 RegExp.escape = (str) ->
-  String(str).replace(/([.*+?^=!:${}()|[\]\/\\])/g, '\\$1');
+    String(str).replace(/([.*+?^=!:${}()|[\]\/\\])/g, '\\$1');

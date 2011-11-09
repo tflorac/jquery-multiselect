@@ -7,7 +7,8 @@ Bundler.require
 
 desc "Compile CoffeeScripts and watch for changes"
 task :coffee do
-  coffee = IO.popen 'coffee -wc --no-wrap -o js src/*.coffee 2>&1'
+  # coffee = IO.popen 'coffee -wc --no-wrap -o js src/*.coffee 2>&1'
+  coffee = IO.popen 'coffee -wc -o js src/*.coffee 2>&1'
 
   while line = coffee.gets
     puts line
