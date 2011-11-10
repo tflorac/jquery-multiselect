@@ -15,6 +15,11 @@ task :coffee do
   end
 end
 
+desc "Compile CoffeeScripts"
+task :compile do
+  IO.popen 'coffee -wc -o js src/*.coffee 2>&1'
+end
+
 desc "Build minified version"
 task :build do
   content = File.read("js/jquery.multiselect.js")
