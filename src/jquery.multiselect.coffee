@@ -39,6 +39,7 @@
                 input_references: null
                 min_query_length: 0
                 on_search: null
+                on_search_timeout: 300
                 max_complete_results: 5
                 max_selection_length: null
                 enable_new_options: true
@@ -318,11 +319,14 @@
             @busy = Math.max(@busy, 0)
 
         search: ->
-            if @timer
-                clearTimeout(@timer)
-            callback = (obj) ->
-                obj._search()
-            @timer = setTimeout callback, 300, this
+            if @multiselect.options.on_search_timeout
+                if @timer
+                    clearTimeout(@timer)
+                callback = (obj) ->
+                    obj._search()
+                @timer = setTimeout callback, @multiselect.options.on_search_timeout, this
+            else
+                @_search()
             return
 
         _search: ->
@@ -374,7 +378,7 @@
                 @completions = @parse_completions(completions)
             finally
                 @_setBusy(false)
-                
+
         hide_complete_box: ->
             @container.fadeOut("fast")
 

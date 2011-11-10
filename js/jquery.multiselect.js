@@ -26,6 +26,7 @@
           input_references: null,
           min_query_length: 0,
           on_search: null,
+          on_search_timeout: 300,
           max_complete_results: 5,
           max_selection_length: null,
           enable_new_options: true,
@@ -361,13 +362,17 @@
       };
       AutoComplete.prototype.search = function() {
         var callback;
-        if (this.timer) {
-          clearTimeout(this.timer);
+        if (this.multiselect.options.on_search_timeout) {
+          if (this.timer) {
+            clearTimeout(this.timer);
+          }
+          callback = function(obj) {
+            return obj._search();
+          };
+          this.timer = setTimeout(callback, this.multiselect.options.on_search_timeout, this);
+        } else {
+          this._search();
         }
-        callback = function(obj) {
-          return obj._search();
-        };
-        this.timer = setTimeout(callback, 300, this);
       };
       AutoComplete.prototype._search = function() {
         var def, i, item, option, x, _len, _ref;
