@@ -5,13 +5,17 @@ h2. About
 jQuery MultiSelect provide an elegant way to handle multiple options on an input.
 To see examples go to "jQuery MultiSelect page":http://wilkerlucio.github.com/jquery-multiselect/
 
-This fork (released as 0.1.8-tf) of initial "jQuery MultiSelect" plugin add a small set of extra features, including:
+The fork (released as 0.1.8-tf) of initial "jQuery MultiSelect" plugin add a small set of extra features, including:
 * added "readonly" option to be able to disable selection modification at startup
 * added "on_search" callback option to get completion items dynamically through a function call
 * added "min_query_length" option to start completion only after a given number of characters
 * added "input_references" option to define input references ; this is used when you use value/caption items in completions.
   Value can be a static array (made of "{ value: caption }" pairs) or a function
 * added "max_selection_length" option to limit selection to a given number of items
+
+Last 0.1.10-tf release added an extra "on_search_timeout" option (default to 300ms) to add an extra
+timeout during keyboard input while using "on_search" callback to avoid browser freeze while typing.
+
 
 h2. Installation
 
